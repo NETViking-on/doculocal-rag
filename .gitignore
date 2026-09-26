@@ -173,9 +173,39 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Cursor  
-#  Cursor is an AI-powered code editor.`.cursorignore` specifies files/directories to 
+# Cursor
+#  Cursor is an AI-powered code editor.`.cursorignore` specifies files/directories to
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# ---------------------------------------------------------------------------
+# Project-specific: DocuLocal-RAG
+# ---------------------------------------------------------------------------
+
+# ChromaDB persistent storage — regenerated locally from source documents,
+# should never be committed (binary, large, and not portable across machines)
+chroma_db/
+*.chroma/
+
+# Local model caches (if downloaded outside Ollama, e.g. via sentence-transformers)
+models_cache/
+.cache/huggingface/
+
+# VS Code editor settings (keep out unless the team explicitly shares them)
+.vscode/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment variables / secrets (API keys, config overrides)
+.env.local
+*.env
+
+# Large personal test documents users may drop in for local testing
+# (uncomment if you don't want to version-control your own PDFs/notes)
+# documents/*
+# !documents/.gitkeep
