@@ -46,23 +46,40 @@ def load_collection():
         ) from exc
 
 
-def retrieve_chunks(collection, question: str, top_k: int = TOP_K) -> list[tuple[str, str]]:
-    """Return the top_k chunks most relevant to the question, as (text, source) pairs."""
+def retrieve_chunks(collection, question: str, top_k: int = TOP_K) -> list[dict]:
+    """Return the top_k chunks most relevant to the question.
+
+    Each result includes the chunk text plus its source file and page number,
+    so citations can point to an exact location rather than just a filename.
+    """
     results = collection.query(query_texts=[question], n_results=top_k)
-    chunks = results["documents"][0]
-    sources = [meta["source"] for meta in results["metadatas"][0]]
-    return list(zip(chunks, sources))
+
+    retrieved = []
+    for text, meta in zip(results["documents"][0], results["metadatas"][0]):
+        retrieved.append({
+            "text": text,
+            "source": meta["source"],
+            "page": meta.get("page"),  # may be absent for older collections
+        })
+    return retrieved
 
 
-def build_prompt(question: str, retrieved: list[tuple[str, str]]) -> str:
+def format_citation(source: str, page: int | None) -> str:
+    """Render a human-readable citation, with or without a page number."""
+    if page is not None:
+        return f"{source}, page {page}"
+    return source
+
+
+def build_prompt(question: str, retrieved: list[dict]) -> str:
     """Assemble a grounded prompt from retrieved chunks and the question.
 
     Explicitly asks for a thorough answer — without this, the model tends
     to default to a one-line summary even when given rich context.
     """
     context_blocks = [
-        f"[Source {i}: {source}]\n{chunk}"
-        for i, (chunk, source) in enumerate(retrieved, start=1)
+        f"[Source {i}: {format_citation(chunk['source'], chunk['page'])}]\n{chunk['text']}"
+        for i, chunk in enumerate(retrieved, start=1)
     ]
     context = "\n\n".join(context_blocks)
 
@@ -110,10 +127,11 @@ def ask(question: str) -> None:
 
     print("\n--- Sources ---")
     seen = set()
-    for _, source in retrieved:
-        if source not in seen:
-            print(f"- {source}")
-            seen.add(source)
+    for chunk in retrieved:
+        citation = format_citation(chunk["source"], chunk["page"])
+        if citation not in seen:
+            print(f"- {citation}")
+            seen.add(citation)
 
 
 # --- Entry point ---------------------------------------------------------------
